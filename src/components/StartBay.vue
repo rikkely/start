@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import config from '../config.js'
 import IconBase from './IconBase.vue'
 
@@ -33,14 +33,34 @@ const greeting = computed(() => {
 })
 
 const engineIdx = ref(0)
+try {
+  const saved = localStorage.getItem('aurora:start:engine')
+  const index = engines.findIndex((item) => item.key === saved)
+  if (index >= 0) engineIdx.value = index
+} catch {
+  // 存储不可用时保留默认搜索引擎。
+}
+watch(engineIdx, (index) => {
+  try {
+    localStorage.setItem('aurora:start:engine', engines[index].key)
+  } catch {
+    // 保存偏好失败不影响搜索。
+  }
+})
 const q = ref('')
 const engine = computed(() => engines[engineIdx.value] || {})
 function submit() {
   const term = q.value.trim()
-  if (!term) return
+  if (!term || !engine.value.url?.includes('{q}')) return
   window.open(engine.value.url.replace('{q}', encodeURIComponent(term)), '_blank', 'noopener')
 }
-const isExternal = (url) => /^(https?:|mailto:)/.test(url)
+const isExternal = (url) => {
+  try {
+    return new URL(url, location.href).origin !== location.origin
+  } catch {
+    return false
+  }
+}
 </script>
 
 <template>
@@ -59,7 +79,7 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
       <form class="finder__box" @submit.prevent="submit">
         <IconBase name="search" :size="19" />
         <input v-model="q" type="text" :placeholder="`在 ${engine.name} 中搜索…`" spellcheck="false" />
-        <button type="submit" class="finder__go"><IconBase name="arrow-right" :size="17" /></button>
+        <button type="submit" class="finder__go" aria-label="搜索"><IconBase name="arrow-right" :size="17" /></button>
       </form>
       <div class="finder__engines">
         <button
@@ -101,7 +121,7 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   padding: clamp(34px, 8vh, 90px) 0 70px;
 }
 
-/* clock */
+/* clock —— 舷窗外的极光下，一块发光的钟 */
 .clock {
   text-align: center;
   margin-bottom: 44px;
@@ -116,16 +136,17 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   align-items: baseline;
   margin: 10px 0 12px;
   font-size: clamp(3.6rem, 13vw, 7rem);
-  font-weight: 200;
+  font-weight: 100;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--text);
   letter-spacing: -1px;
+  text-shadow: 0 0 38px rgba(143, 208, 255, 0.45), 0 0 90px rgba(126, 240, 192, 0.18);
 }
 .clock__c {
   margin: 0 0.04em;
   color: var(--accent-a);
-  font-weight: 200;
+  font-weight: 100;
   animation: soft 1.4s ease-in-out infinite;
 }
 .clock__c--s {
@@ -136,7 +157,7 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   font-size: 0.5em;
   align-self: center;
   color: var(--accent-a);
-  font-weight: 400;
+  font-weight: 300;
 }
 @keyframes soft {
   50% { opacity: 0.35; }
@@ -147,7 +168,7 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   color: var(--text-dim);
 }
 
-/* finder */
+/* finder —— 深色玻璃搜索条 */
 .finder {
   max-width: 620px;
   margin: 0 auto 56px;
@@ -158,17 +179,18 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   gap: 13px;
   padding: 16px 18px;
   color: var(--text-dim);
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(10, 17, 33, 0.55);
+  border: 1px solid rgba(143, 208, 255, 0.18);
   border-radius: 18px;
-  box-shadow: 0 18px 44px -22px rgba(60, 70, 130, 0.5);
+  box-shadow: 0 18px 44px -20px rgba(0, 0, 0, 0.8);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   backdrop-filter: blur(14px) saturate(140%);
-  transition: box-shadow 0.3s, transform 0.3s var(--ease-out);
+  transition: box-shadow 0.3s, transform 0.3s var(--ease-out), border-color 0.3s;
 }
 .finder__box:focus-within {
   transform: translateY(-2px);
-  box-shadow: 0 24px 54px -22px rgba(80, 90, 170, 0.6);
+  border-color: rgba(143, 208, 255, 0.55);
+  box-shadow: 0 24px 54px -20px rgba(0, 0, 0, 0.9), 0 0 32px -6px rgba(143, 208, 255, 0.4);
   color: var(--accent-a);
 }
 .finder__box input {
@@ -189,13 +211,14 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  color: #fff;
+  color: #07101e;
   background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-  box-shadow: 0 8px 20px -8px var(--accent-a);
-  transition: transform 0.2s var(--ease-out);
+  box-shadow: 0 0 22px -4px rgba(143, 208, 255, 0.65);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.25s;
 }
 .finder__go:hover {
   transform: translateX(2px) scale(1.04);
+  box-shadow: 0 0 30px -4px rgba(126, 240, 192, 0.8);
 }
 .finder__engines {
   display: flex;
@@ -209,22 +232,24 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   font-size: 0.72rem;
   letter-spacing: 0.5px;
   color: var(--text-soft);
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(12, 20, 38, 0.5);
+  border: 1px solid rgba(143, 208, 255, 0.14);
   border-radius: 999px;
-  transition: color 0.25s, transform 0.2s var(--ease-out), box-shadow 0.25s;
+  transition: color 0.25s, transform 0.2s var(--ease-out), box-shadow 0.25s, border-color 0.25s;
 }
 .eng:hover {
   transform: translateY(-1px);
+  border-color: rgba(143, 208, 255, 0.4);
 }
 .eng.is-on {
-  color: #fff;
+  color: #07101e;
   background: linear-gradient(120deg, var(--accent-a), var(--accent-b));
   border-color: transparent;
-  box-shadow: 0 10px 22px -10px var(--accent-a);
+  box-shadow: 0 0 22px -6px rgba(143, 208, 255, 0.8);
+  font-weight: 600;
 }
 
-/* launch */
+/* launch —— 深色玻璃磁贴 */
 .launch__head {
   margin-bottom: 18px;
   font-size: 0.96rem;
@@ -245,20 +270,22 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   gap: 10px;
   padding: 22px 16px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(11, 18, 35, 0.5);
+  border: 1px solid rgba(233, 240, 252, 0.08);
   border-radius: 20px;
-  box-shadow: 0 14px 36px -22px rgba(60, 70, 130, 0.55);
+  box-shadow: 0 14px 36px -22px rgba(0, 0, 0, 0.8);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
   backdrop-filter: blur(12px) saturate(140%);
-  transition: transform 0.3s var(--ease-out), box-shadow 0.3s, background 0.3s;
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s, background 0.3s,
+    border-color 0.3s;
   animation: rise 0.7s var(--ease-out) backwards;
   animation-delay: var(--delay);
 }
 .tile:hover {
   transform: translateY(-6px);
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 26px 52px -24px rgba(80, 90, 170, 0.6);
+  background: rgba(16, 26, 48, 0.65);
+  border-color: rgba(143, 208, 255, 0.4);
+  box-shadow: 0 26px 52px -24px rgba(0, 0, 0, 0.9), 0 0 30px -8px rgba(143, 208, 255, 0.35);
 }
 .tile__icon {
   display: grid;
@@ -266,13 +293,14 @@ const isExternal = (url) => /^(https?:|mailto:)/.test(url)
   width: 50px;
   height: 50px;
   border-radius: 16px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
-  box-shadow: 0 10px 22px -10px var(--accent-a);
-  transition: transform 0.3s var(--ease-out);
+  color: #07101e;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-c));
+  box-shadow: 0 0 24px -6px rgba(143, 208, 255, 0.6);
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
 }
 .tile:hover .tile__icon {
   transform: scale(1.08) rotate(-4deg);
+  box-shadow: 0 0 32px -6px rgba(184, 155, 255, 0.75);
 }
 .tile__name {
   font-size: 0.98rem;

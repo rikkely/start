@@ -1,17 +1,3 @@
-@font-face {
-  font-family: 'Pacifico';
-  src: url('../assets/fonts/Pacifico-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'UnidreamLED';
-  src: url('../assets/fonts/UnidreamLED.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
 
 :root {
   /* accent palette is injected at runtime by useTheme (matches the home app) */
@@ -41,8 +27,8 @@
     sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
     monospace;
-  --font-brand: 'Pacifico', 'Segoe Script', cursive;
-  --font-led: 'UnidreamLED', var(--font-mono);
+  --font-brand: 'Segoe Script', cursive;
+  --font-led: var(--font-mono);
 }
 
 *,

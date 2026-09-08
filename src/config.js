@@ -2,7 +2,7 @@
  * AURORA // LAUNCH BAY —— 起始页前端配置（独立可部署，挂载于 /start/）
  * 这是个纯静态仪表盘：搜索 + 快捷入口，全部在本文件里配置，无需后端。
  */
-import avatar from './assets/images/avatar.png'
+import avatar from './assets/images/avatar.jpg'
 
 export default {
   site: {

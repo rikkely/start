@@ -4,15 +4,15 @@ import ZenStage from './components/ZenStage.vue'
 import StartBay from './components/StartBay.vue'
 import IconBase from './components/IconBase.vue'
 
-// 固定「禅意浅色玻璃」配色（独立风格，浅底深字）
+// 「深空舷窗」配色：极夜深蓝底 + 冰蓝 / 极光绿 / 星紫
 const s = document.documentElement.style
-s.setProperty('--bg-0', '#eef2fb')
-s.setProperty('--text', '#2a2f4a')
-s.setProperty('--text-soft', 'rgba(42, 47, 74, 0.7)')
-s.setProperty('--text-dim', 'rgba(42, 47, 74, 0.45)')
-s.setProperty('--accent-a', '#6d7bff')
-s.setProperty('--accent-b', '#1bb6c9')
-s.setProperty('--accent-c', '#ff7eb6')
+s.setProperty('--bg-0', '#05080f')
+s.setProperty('--text', '#e9f0fc')
+s.setProperty('--text-soft', 'rgba(233, 240, 252, 0.72)')
+s.setProperty('--text-dim', 'rgba(233, 240, 252, 0.42)')
+s.setProperty('--accent-a', '#8fd0ff')
+s.setProperty('--accent-b', '#7ef0c0')
+s.setProperty('--accent-c', '#b89bff')
 
 const host = `${config.site.name}${config.site.suffix || ''}`
 document.title = `${host} · 启航舱`
@@ -51,18 +51,20 @@ if (!fav.parentNode) document.head.appendChild(fav)
   padding: 8px 14px 8px 11px;
   font-size: 0.82rem;
   color: var(--text-soft);
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(11, 18, 35, 0.55);
+  border: 1px solid rgba(143, 208, 255, 0.18);
   border-radius: 999px;
-  box-shadow: 0 6px 20px -10px rgba(60, 70, 120, 0.4);
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.7);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  transition: transform 0.25s var(--ease-out), box-shadow 0.25s, color 0.25s;
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s, color 0.25s,
+    border-color 0.25s;
 }
 .bar__home:hover {
   transform: translateX(-2px);
   color: var(--accent-a);
-  box-shadow: 0 10px 26px -10px rgba(80, 90, 160, 0.5);
+  border-color: rgba(143, 208, 255, 0.45);
+  box-shadow: 0 10px 26px -10px rgba(0, 0, 0, 0.8), 0 0 18px -6px rgba(143, 208, 255, 0.4);
 }
 .bar__brand {
   font-family: var(--font-mono);
