@@ -4,3 +4,8 @@ dist.zip
 *.local
 .DS_Store
 .vite
+
+.claude/
+.env
+.env.*
+!.env.example
