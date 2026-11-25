@@ -37,7 +37,7 @@ export default {
     { name: '声波甲板', desc: 'AUDIO', icon: 'music', url: '/music/' },
     { name: '导航目录', desc: 'CATALOG', icon: 'compass', url: '/nav/' },
     { name: '实验室', desc: 'LAB', icon: 'flask', url: '/lab/' },
-    { name: 'GitHub', desc: 'CODE', icon: 'terminal', url: 'https://github.com/' },
+    { name: 'GitHub', desc: 'CODE', icon: 'terminal', url: 'https://github.com/rikkely' },
     { name: '邮箱', desc: 'MAIL', icon: 'mail', url: 'mailto:hi@example.com' }
   ],
 

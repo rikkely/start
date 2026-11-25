@@ -3,13 +3,14 @@ import config from './config.js'
 import ZenStage from './components/ZenStage.vue'
 import StartBay from './components/StartBay.vue'
 import IconBase from './components/IconBase.vue'
+import AuroraDock from './components/AuroraDock.vue'
 
 // 「深空舷窗」配色：极夜深蓝底 + 冰蓝 / 极光绿 / 星紫
 const s = document.documentElement.style
 s.setProperty('--bg-0', '#05080f')
 s.setProperty('--text', '#e9f0fc')
 s.setProperty('--text-soft', 'rgba(233, 240, 252, 0.72)')
-s.setProperty('--text-dim', 'rgba(233, 240, 252, 0.42)')
+s.setProperty('--text-dim', 'rgba(233, 240, 252, 0.44)')
 s.setProperty('--accent-a', '#8fd0ff')
 s.setProperty('--accent-b', '#7ef0c0')
 s.setProperty('--accent-c', '#b89bff')
@@ -22,6 +23,9 @@ fav.setAttribute('rel', 'icon')
 fav.removeAttribute('type')
 fav.setAttribute('href', config.site.avatar)
 if (!fav.parentNode) document.head.appendChild(fav)
+
+const f = config.footer || {}
+const year = new Date().getFullYear()
 </script>
 
 <template>
@@ -33,6 +37,13 @@ if (!fav.parentNode) document.head.appendChild(fav)
   </header>
 
   <main class="page"><StartBay /></main>
+
+  <footer class="foot">
+    <span>© {{ f.startYear }}–{{ year }} {{ f.author }}</span>
+    <span v-if="f.icp"><a :href="f.icpLink" target="_blank" rel="noopener">{{ f.icp }}</a></span>
+  </footer>
+
+  <AuroraDock active="start" />
 </template>
 
 <style scoped>
@@ -81,5 +92,17 @@ if (!fav.parentNode) document.head.appendChild(fav)
 .page {
   position: relative;
   z-index: 1;
+}
+.foot {
+  width: min(960px, 92vw);
+  margin: 0 auto;
+  padding: 12px 4px 88px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
 }
 </style>

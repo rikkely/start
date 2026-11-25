@@ -9,8 +9,6 @@ const tiles = config.tiles || []
 
 const now = ref(new Date())
 let timer = null
-onMounted(() => (timer = setInterval(() => (now.value = new Date()), 1000)))
-onUnmounted(() => clearInterval(timer))
 
 const pad = (n) => String(n).padStart(2, '0')
 const hh = computed(() => pad(now.value.getHours()))
@@ -47,13 +45,67 @@ watch(engineIdx, (index) => {
     // 保存偏好失败不影响搜索。
   }
 })
+
 const q = ref('')
+const inputRef = ref(null)
 const engine = computed(() => engines[engineIdx.value] || {})
+
+const isDirectUrl = computed(() => {
+  const s = q.value.trim()
+  if (!s || /\s/.test(s)) return false
+  return /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(\/.*)?$/i.test(s)
+})
+
 function submit() {
   const term = q.value.trim()
-  if (!term || !engine.value.url?.includes('{q}')) return
+  if (!term) return
+  if (isDirectUrl.value) {
+    const url = /^https?:\/\//i.test(term) ? term : `https://${term}`
+    window.open(url, '_blank', 'noopener')
+    return
+  }
+  if (!engine.value.url?.includes('{q}')) return
   window.open(engine.value.url.replace('{q}', encodeURIComponent(term)), '_blank', 'noopener')
 }
+
+function cycleEngine() {
+  if (!engines.length) return
+  engineIdx.value = (engineIdx.value + 1) % engines.length
+}
+
+function onGlobalKey(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    inputRef.value?.focus()
+    return
+  }
+  if (e.key === '/' && document.activeElement !== inputRef.value) {
+    const tag = e.target?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return
+    e.preventDefault()
+    inputRef.value?.focus()
+  }
+}
+
+function onInputKeydown(e) {
+  if (e.key === 'Tab' && engines.length > 1) {
+    e.preventDefault()
+    cycleEngine()
+  } else if (e.key === 'Escape') {
+    q.value = ''
+    inputRef.value?.blur()
+  }
+}
+
+onMounted(() => {
+  timer = setInterval(() => (now.value = new Date()), 1000)
+  window.addEventListener('keydown', onGlobalKey)
+})
+onUnmounted(() => {
+  clearInterval(timer)
+  window.removeEventListener('keydown', onGlobalKey)
+})
+
 const isExternal = (url) => {
   try {
     return new URL(url, location.href).origin !== location.origin
@@ -78,7 +130,15 @@ const isExternal = (url) => {
     <section class="finder">
       <form class="finder__box" @submit.prevent="submit">
         <IconBase name="search" :size="19" />
-        <input v-model="q" type="text" :placeholder="`在 ${engine.name} 中搜索…`" spellcheck="false" />
+        <input
+          ref="inputRef"
+          v-model="q"
+          type="text"
+          :placeholder="`在 ${engine.name} 中搜索，或输入网址… (按 / 聚焦 · Tab 切引擎)`"
+          spellcheck="false"
+          @keydown="onInputKeydown"
+        />
+        <span v-if="isDirectUrl" class="finder__direct">直达 ↵</span>
         <button type="submit" class="finder__go" aria-label="搜索"><IconBase name="arrow-right" :size="17" /></button>
       </form>
       <div class="finder__engines">
@@ -92,7 +152,7 @@ const isExternal = (url) => {
       </div>
     </section>
 
-    <!-- 快捷入口 -->
+    <!-- 快捷入口（4×2 均衡矩阵） -->
     <section class="launch">
       <h2 class="launch__head">快捷入口</h2>
       <div class="tiles">
@@ -103,9 +163,9 @@ const isExternal = (url) => {
           :href="t.url"
           :target="isExternal(t.url) ? '_blank' : '_self'"
           :rel="isExternal(t.url) ? 'noopener' : null"
-          :style="{ '--delay': i * 0.05 + 's' }"
+          :style="{ '--delay': i * 0.045 + 's' }"
         >
-          <span class="tile__icon"><IconBase :name="t.icon" :size="22" /></span>
+          <span class="tile__icon"><IconBase :name="t.icon" :size="21" /></span>
           <span class="tile__name">{{ t.name }}</span>
           <span class="tile__desc">{{ t.desc }}</span>
         </a>
@@ -118,16 +178,16 @@ const isExternal = (url) => {
 .bay {
   width: min(880px, 92vw);
   margin: 0 auto;
-  padding: clamp(34px, 8vh, 90px) 0 70px;
+  padding: clamp(28px, 6.5vh, 72px) 0 36px;
 }
 
 /* clock —— 舷窗外的极光下，一块发光的钟 */
 .clock {
   text-align: center;
-  margin-bottom: 44px;
+  margin-bottom: 38px;
 }
 .clock__hi {
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   letter-spacing: 1px;
   color: var(--text-soft);
 }
@@ -135,13 +195,13 @@ const isExternal = (url) => {
   display: inline-flex;
   align-items: baseline;
   margin: 10px 0 12px;
-  font-size: clamp(3.6rem, 13vw, 7rem);
+  font-size: clamp(3.6rem, 12vw, 6.6rem);
   font-weight: 100;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--text);
   letter-spacing: -1px;
-  text-shadow: 0 0 38px rgba(143, 208, 255, 0.45), 0 0 90px rgba(126, 240, 192, 0.18);
+  text-shadow: 0 0 36px rgba(143, 208, 255, 0.42), 0 0 84px rgba(126, 240, 192, 0.16);
 }
 .clock__c {
   margin: 0 0.04em;
@@ -170,27 +230,28 @@ const isExternal = (url) => {
 
 /* finder —— 深色玻璃搜索条 */
 .finder {
-  max-width: 620px;
-  margin: 0 auto 56px;
+  max-width: 640px;
+  margin: 0 auto 48px;
 }
 .finder__box {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 16px 18px;
+  gap: 12px;
+  padding: 14px 16px;
   color: var(--text-dim);
-  background: rgba(10, 17, 33, 0.55);
-  border: 1px solid rgba(143, 208, 255, 0.18);
+  background: rgba(10, 17, 33, 0.62);
+  border: 1px solid rgba(143, 208, 255, 0.2);
   border-radius: 18px;
-  box-shadow: 0 18px 44px -20px rgba(0, 0, 0, 0.8);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 18px 44px -20px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(233, 240, 252, 0.12);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
   transition: box-shadow 0.3s, transform 0.3s var(--ease-out), border-color 0.3s;
 }
 .finder__box:focus-within {
   transform: translateY(-2px);
   border-color: rgba(143, 208, 255, 0.55);
-  box-shadow: 0 24px 54px -20px rgba(0, 0, 0, 0.9), 0 0 32px -6px rgba(143, 208, 255, 0.4);
+  box-shadow: 0 24px 54px -20px rgba(0, 0, 0, 0.9), 0 0 32px -6px rgba(143, 208, 255, 0.38);
   color: var(--accent-a);
 }
 .finder__box input {
@@ -200,16 +261,28 @@ const isExternal = (url) => {
   outline: none;
   background: none;
   color: var(--text);
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 .finder__box input::placeholder {
   color: var(--text-dim);
+  font-size: 0.9rem;
+}
+.finder__direct {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--accent-b);
+  background: rgba(126, 240, 192, 0.12);
+  border: 1px solid rgba(126, 240, 192, 0.3);
+  white-space: nowrap;
 }
 .finder__go {
   display: grid;
   place-items: center;
   width: 38px;
   height: 38px;
+  flex: none;
   border-radius: 12px;
   color: #07101e;
   background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
@@ -225,14 +298,14 @@ const isExternal = (url) => {
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 15px;
 }
 .eng {
   padding: 6px 14px;
   font-size: 0.72rem;
   letter-spacing: 0.5px;
   color: var(--text-soft);
-  background: rgba(12, 20, 38, 0.5);
+  background: rgba(12, 20, 38, 0.54);
   border: 1px solid rgba(143, 208, 255, 0.14);
   border-radius: 999px;
   transition: color 0.25s, transform 0.2s var(--ease-out), box-shadow 0.25s, border-color 0.25s;
@@ -249,69 +322,76 @@ const isExternal = (url) => {
   font-weight: 600;
 }
 
-/* launch —— 深色玻璃磁贴 */
+/* launch —— 4×2 均衡深色玻璃磁贴 */
 .launch__head {
-  margin-bottom: 18px;
-  font-size: 0.96rem;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
   font-weight: 600;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   color: var(--text-soft);
   text-align: center;
 }
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 .tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 22px 16px;
+  gap: 9px;
+  padding: 20px 14px;
   text-align: center;
-  background: rgba(11, 18, 35, 0.5);
-  border: 1px solid rgba(233, 240, 252, 0.08);
-  border-radius: 20px;
-  box-shadow: 0 14px 36px -22px rgba(0, 0, 0, 0.8);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  backdrop-filter: blur(12px) saturate(140%);
+  background: rgba(11, 18, 35, 0.56);
+  border: 1px solid rgba(233, 240, 252, 0.09);
+  border-radius: 18px;
+  box-shadow: 0 14px 36px -22px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(233, 240, 252, 0.1);
+  -webkit-backdrop-filter: blur(14px) saturate(145%);
+  backdrop-filter: blur(14px) saturate(145%);
   transition: transform 0.3s var(--ease-out), box-shadow 0.3s, background 0.3s,
     border-color 0.3s;
   animation: rise 0.7s var(--ease-out) backwards;
   animation-delay: var(--delay);
 }
 .tile:hover {
-  transform: translateY(-6px);
-  background: rgba(16, 26, 48, 0.65);
-  border-color: rgba(143, 208, 255, 0.4);
-  box-shadow: 0 26px 52px -24px rgba(0, 0, 0, 0.9), 0 0 30px -8px rgba(143, 208, 255, 0.35);
+  transform: translateY(-5px);
+  background: rgba(16, 26, 48, 0.72);
+  border-color: rgba(143, 208, 255, 0.42);
+  box-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.9), 0 0 28px -8px rgba(143, 208, 255, 0.32);
 }
 .tile__icon {
   display: grid;
   place-items: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 16px;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
   color: #07101e;
-  background: linear-gradient(135deg, var(--accent-a), var(--accent-c));
-  box-shadow: 0 0 24px -6px rgba(143, 208, 255, 0.6);
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  box-shadow: 0 0 22px -6px rgba(143, 208, 255, 0.55);
   transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
 }
 .tile:hover .tile__icon {
-  transform: scale(1.08) rotate(-4deg);
-  box-shadow: 0 0 32px -6px rgba(184, 155, 255, 0.75);
+  transform: scale(1.07) rotate(-3deg);
+  box-shadow: 0 0 30px -6px rgba(126, 240, 192, 0.7);
 }
 .tile__name {
-  font-size: 0.98rem;
+  font-size: 0.96rem;
   font-weight: 600;
   color: var(--text);
 }
 .tile__desc {
   font-family: var(--font-mono);
-  font-size: 0.58rem;
-  letter-spacing: 1.5px;
+  font-size: 0.56rem;
+  letter-spacing: 1.4px;
   color: var(--text-dim);
+}
+
+@media (max-width: 760px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
